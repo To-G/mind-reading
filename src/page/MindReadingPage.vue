@@ -191,17 +191,24 @@ const init = (c) => {
     })
 }
 
-// 本地调试模式：当 URL 包含 localhost 或使用 file:// 协议时自动初始化
+// 独立预览：非 iframe 嵌入（含 GitHub Pages）时用默认配置自动进入
 import { onMounted } from 'vue'
+
+const isStandalonePreview = () =>
+    window.parent === window
+    || window.location.hostname === 'localhost'
+    || window.location.hostname.endsWith('github.io')
+    || window.location.protocol === 'file:'
+
 onMounted(() => {
-    if (window.location.hostname === 'localhost' || window.location.protocol === 'file:') {
+    if (isStandalonePreview()) {
         init({
             icon: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
             mode: '1',
             icon9: '0',
             restartBtn: '1'
         })
-        create()   //初始化图标数据
+        create()
     }
 })
 

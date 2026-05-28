@@ -87,11 +87,23 @@ S.Track.init()
 // 监听事件
 console.log("初始化事件监听")
 
+const IDE_CMDS = new Set(['mind-reading', 'onClickClose'])
+
 window.addEventListener('message', (event) => {
+    const data = event.data
+    if (!data || typeof data !== 'object' || !data.cmd) {
+        return
+    }
+
+    // 忽略 H5 自己 post 的 ready，避免空转
+    if (data.cmd === 'ready' && data.source === 'h5') {
+        return
+    }
+
     console.log("接收到消息::", event)
-    if (event.data.cmd === 'userInfo') {
-        
-        const { userId, token, classId, questionId, unitId, subjectId } = event.data.content
+
+    if (data.cmd === 'userInfo') {
+        const { userId, token, classId, questionId, unitId, subjectId } = data.content
 
         S.Store.user.id = Number(userId)
         S.Store.user.token = token
@@ -99,9 +111,8 @@ window.addEventListener('message', (event) => {
         S.Store.user.questionId = Number(questionId)
         S.Store.user.unitId = Number(unitId)
         S.Store.user.subjectId = Number(subjectId)
-    }
-    else {
-        S.Store.event = event.data
+    } else if (IDE_CMDS.has(data.cmd)) {
+        S.Store.event = data
     }
 })
 
