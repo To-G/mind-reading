@@ -1,18 +1,34 @@
-export const ObjectUtil = {
-  deepClone<T>(obj: T): T {
-    if (obj === null || typeof obj !== 'object') return obj
-    if (obj instanceof Array) return [...obj] as unknown as T
-    return { ...obj } as T
-  },
+export const snakeNameWithObject = (object: any, encode: boolean=false) => {
 
-  isEmpty(obj: unknown): boolean {
-    if (obj === null || obj === undefined) return true
-    if (obj instanceof Array) return obj.length === 0
-    if (typeof obj === 'object') return Object.keys(obj as object).length === 0
-    return false
-  },
+    if (Array.isArray(object)) {
+        
+        object.forEach((item, index) => {
+            object[index] = snakeNameWithObject(item, encode)
+        })
 
-  merge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
-    return { ...target, ...source }
-  }
+    }
+    else if (object !== null && typeof object == 'object' && !Array.isArray(object)) {
+        
+        object = Object.assign({}, object)
+
+        for(let key in object) {
+
+            if (typeof object[key] == 'object') {
+                object[key] = snakeNameWithObject(object[key], encode)
+            }
+
+            let newKey = encode ? key.replace(/([A-Z])/g, "_$1").toLowerCase() : key.replace(/_(\w)/g, ($0, $1) => {
+                return $1.toUpperCase();
+            })
+
+            if (newKey != key) {
+                object[newKey] = object[key];
+                delete object[key];
+            }
+        }
+
+    }
+
+    return object;
+
 }

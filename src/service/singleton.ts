@@ -1,12 +1,15 @@
+
+interface ISingleton<T> {
+    new (...params: any[]): T
+}
+
 export class Singleton {
-  private static instances: Map<string, unknown> = new Map()
 
-  protected constructor() {}
+    static instances: Map<string, any> = new Map()
 
-  protected static getInstance<T>(className: string, creator: () => T): T {
-    if (!Singleton.instances.has(className)) {
-      Singleton.instances.set(className, creator())
+    static make<T>(name, instance: ISingleton<T>): T {
+        this.instances.has(name) || this.instances.set(name, new instance())
+        return this.instances.get(name)
     }
-    return Singleton.instances.get(className) as T
-  }
+
 }
