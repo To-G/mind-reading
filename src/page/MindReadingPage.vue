@@ -48,11 +48,11 @@ page.mind-reading-page(
             div.tips(v-if='p.tips')
                 label 例如：20的十位数是2
                     br
+                    br
                     | 就要用     
                     b 2
                     | 0-
                     b 2
-                    | =18
                     br
                 button.btn-next(@click='closeTips()') 明白了
         div.step.step-5(v-if='p.step == 5')
