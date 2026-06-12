@@ -37,24 +37,21 @@ page.mind-reading-page(
                     | =20
                 button.btn-next(@click='p.tips = false') 明白了
         div.step.step-4(v-if='p.step == 4' :class='{"show-tips": p.tips}')
-            span.step4-text
-                span.line1
-                    | 再
-                    b 减去十位的数字，
-                span.line2(:class='{"show": p.step4Part2}')
-                    | 记住你算的结果！
-                em(v-show='p.showHowBtn' :class='{"show": p.showHowBtn}' @click='p.tips = true') 怎么算？
-            button.btn-next(v-if='p.step4ShowNext' @click='next(5)') 继续
+            span 再
+                b 减去十位的数字，
+                br
+                | 记住你算的结果！
+                em(@click='p.tips = true') 怎么算？
+            button.btn-next(:style='{visibility: p.showContinue4 ? "visible" : "hidden"}' @click='next(5)') 继续
             div.tips(v-if='p.tips')
                 label 例如：20的十位数是2
                     br
-                    br
-                    | 就要用     
+                    | 就要用 
                     b 2
                     | 0-
                     b 2
                     br
-                button.btn-next(@click='closeTips()') 明白了
+                button.btn-next(@click='onStep4TipsClose') 明白了
         div.step.step-5(v-if='p.step == 5')
             span 找到结果
                 i 数字对应的图案，
@@ -100,15 +97,13 @@ import { AssetURL } from '../helper/asset';
 const final = String(useRoute().query.final) == '1'
 
 const itemsRef = ref(null)
+const logs = ref<any[]>([])
 
 const voices = {
     1: Voice1MP3,
     2: Voice2MP3,
     3: Voice3MP3,
     4: Voice4MP3,
-    '4-1': Voice4_1MP3,
-    '4-1-1': Voice4_1_1MP3,
-    '4-2': Voice4_2MP3,
     5: Voice5MP3,
     7: Voice7MP3,
     8: Voice8MP3,
@@ -117,20 +112,17 @@ const voices = {
 const p = reactive({
     step: 0,
     tips: false,
+    showContinue4: false,
     timeout: 3,
     resultIndex: 0,
     icons: Array.from({ length: 99 }, (_, index) => {
         return {
             index: index + 1,
-            icon: (index % 10)+1,
+            icon: index,
         }
     }),
     closeTip: false,
     scrollTop: 0,
-    showHowBtn: false,  // 控制"怎么算"按钮的显示
-    step4Part2: false,  // 控制 step4 第二部分文字显示
-    step4ShowNext: false,  // 控制 step4 "继续"按钮的显示
-    step4FirstClose: true,  // 是否是第一次关闭弹窗
 })
 
 const content = reactive({
@@ -141,6 +133,7 @@ const content = reactive({
 })
 
 const { store, type, operationStart, operationEnd, operationClose } = useIDE('1', (c) => {
+
     if (type == PageType.SHARE) {
         init(c)
     }
@@ -179,44 +172,38 @@ watch(() => store.event, (event) => {
 })
 
 const init = (c) => {
-    content.icon = c.icon
+
+    content.icon = typeof c.icon === 'string' 
+        ? c.icon.split(',').filter((item, index, arr) => item.length > 0 && arr.indexOf(item) == index)
+        : c.icon
     content.mode = Number(c.mode) || 0
     content.icon9 = Number(c.icon9) || 0
     content.restartBtn = c.restartBtn
 
     preload(['AliFont'], () => {
+        
         store.pageLoaded()
+
         store.page.bgmAudio.src = BgmMP3
         store.page.bgmAudio.volume = 0.1
     })
 }
 
-// 独立预览：非 iframe 嵌入（含 GitHub Pages）时用默认配置自动进入
-import { onMounted } from 'vue'
-
-const isStandalonePreview = () =>
-    window.parent === window
-    || window.location.hostname === 'localhost'
-    || window.location.hostname.endsWith('github.io')
-    || window.location.protocol === 'file:'
-
-onMounted(() => {
-    if (isStandalonePreview()) {
-        init({
-            icon: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
-            mode: '1',
-            icon9: '0',
-            restartBtn: '1'
-        })
-        create()
-    }
-})
+// 开发环境下直接在浏览器打开时，自动 mock 一次 mind-reading 事件
+if (import.meta.env.DEV && type == PageType.EDITOR) {
+    init({
+        icon: '1,2,3,4,5,6,7,8,9,10',
+        mode: '1',
+        icon9: '0',
+        restartBtn: '1',
+    })
+}
 
 const create = () => {
 
     if (content.icon.length < 2) {
         p.resultIndex = 0
-    }   
+    }
 
     const icons = content.icon.filter(i => Number(i) != p.resultIndex)
     p.resultIndex = Number(icons[Math.floor(Math.random() * icons.length)])
@@ -249,21 +236,14 @@ const next = (step: number) => {
     p.tips = false  
 }
 
-const closeTips = () => {
-    const tipsEl = document.querySelector('.step-4 .tips')
-    
-    if (tipsEl) {
-        tipsEl.classList.add('tips-close')
-        setTimeout(() => {
-            p.tips = false
-            tipsEl.classList.remove('tips-close')
-            
-            // 显示"怎么算"按钮
-            p.showHowBtn = true
-        }, 400)
-    } else {
-        p.tips = false
-        p.showHowBtn = true
+const onStep4TipsClose = () => {
+    p.tips = false
+    // 播放 4-2.mp3，结束后显示"继续"按钮
+    store.page.actAudio.src = Voice4_2MP3
+    store.page.actAudio.play()
+    store.page.actAudio.onended = () => {
+        store.page.actAudio.onended = null
+        p.showContinue4 = true
     }
 }
 
@@ -304,44 +284,18 @@ watch(() => p.step, (step) => {
         store.page.actAudio.play()
     }
 
-    // step4 流程控制
     if (step == 4) {
-        p.showHowBtn = false
-        p.step4Part2 = true  // line2 一开始就显示
-        p.step4ShowNext = false  // 隐藏"继续"按钮
-        
-        // 播放第一部分音频 "再减去十位的数字,"
-        store.page.actAudio.src = voices['4-1']
+        p.showContinue4 = false
+        p.tips = false
+        // 播放 4-1.mp3，结束后播放 4-1-1.mp3 并展示 tips 窗口
+        store.page.actAudio.src = Voice4_1MP3
         store.page.actAudio.play()
-        
-        // 监听音频播放完成
-        const handleAudioEnd1 = () => {
-            store.page.actAudio.removeEventListener('ended', handleAudioEnd1)
-            
-            // 弹出弹窗，播放提示音频
-            p.tips = true
-            store.page.actAudio.src = voices['4-1-1']
+        store.page.actAudio.onended = () => {
+            store.page.actAudio.onended = null
+            store.page.actAudio.src = Voice4_1_1MP3
             store.page.actAudio.play()
-            
-            // 监听提示音频播放完成，自动播放 4-2.mp3
-            const handleAudioEnd2 = () => {
-                store.page.actAudio.removeEventListener('ended', handleAudioEnd2)
-                
-                // 自动播放第二部分音频 "记住这个结果数字!"
-                store.page.actAudio.src = voices['4-2']
-                store.page.actAudio.play()
-                
-                // 监听第二部分音频播放完成
-                const handleAudioEnd3 = () => {
-                    store.page.actAudio.removeEventListener('ended', handleAudioEnd3)
-                    // 音频全部播放完后显示"继续"按钮
-                    p.step4ShowNext = true
-                }
-                store.page.actAudio.addEventListener('ended', handleAudioEnd3)
-            }
-            store.page.actAudio.addEventListener('ended', handleAudioEnd2)
+            p.tips = true
         }
-        store.page.actAudio.addEventListener('ended', handleAudioEnd1)
     }
 
     if (step == 6) {
@@ -349,8 +303,6 @@ watch(() => p.step, (step) => {
         nextTick(() => {
             itemsRef.value.addEventListener('scroll', scroll);
         })
-        console.log('图片路径:', AssetURL('mind-reading/1.png'))
-
     }
 
     if (step == 8) {
@@ -447,42 +399,8 @@ watch(() => p.step, (step) => {
             }
 
             &.step-4 {
-                display: flex;
-                flex-direction: column;
-                justify-content: flex-start;
-                padding-top: 180px;
-
-                span.step4-text {
+                span {
                     position: relative;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 10px;
-
-                    span.line1 {
-                        font-size: 60px;
-                        font-weight: 700;
-                        color: #FDF8FF;
-                        text-align: center;
-
-                        b {
-                            color: #FFE356;
-                        }
-                    }
-
-                    span.line2 {
-                        font-size: 60px;
-                        font-weight: 700;
-                        color: #FDF8FF;
-                        text-align: center;
-                        opacity: 0;
-                        transition: opacity 0.5s ease;
-                        
-                        &.show {
-                            opacity: 1;
-                        }
-                    }
-
                     em {
                         display: block;
                         width: 107px;
@@ -498,16 +416,6 @@ watch(() => p.step, (step) => {
                         text-align: right;
                         cursor: pointer;
                         animation: shake 3s ease-in-out 0.8s;
-                        opacity: 0;
-                        transform: scale(0);
-                        transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
-                        pointer-events: none;
-
-                        &.show {
-                            opacity: 1;
-                            transform: scale(1);
-                            pointer-events: auto;
-                        }
 
                         &::after {
                             content: '';
@@ -651,6 +559,7 @@ watch(() => p.step, (step) => {
 
             span {
                 display: block;
+                height: 134px;
                 color: #FDF8FF;
                 text-align: center;
                 font-size: 60px;
@@ -692,29 +601,26 @@ watch(() => p.step, (step) => {
             }
 
             div.tips {
-                width: 280px;
-                height: 200px;
+                width: 810px;
+                height: 512px;
                 position: absolute;
-                top: 200px;
-                background: rgba(255, 255, 255, 0.95);
-                border: 3px solid #FE801E;
-                border-radius: 15px;
-                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+                top: calc(50% - 256px);
+                left: calc(50% - 405px);
+                background: url(../asset/mind-reading/tips-bg.png) no-repeat;
+                background-size: cover;
+                background-position: center;
                 display: flex;
                 justify-content: center;
                 align-items: center;
                 flex-direction: column;
-                z-index: 100;
-                padding: 20px;
 
                 label {
                     color: #1D0056;
-                    width: 100%;
+                    width: 700px;
                     text-align: center;
-                    font-size: 24px;
-                    font-weight: 600;
+                    font-size: 56px;
+                    font-weight: 700;
                     display: block;
-                    line-height: 1.5;
 
                     b {
                         color: #FE801E;
@@ -726,33 +632,11 @@ watch(() => p.step, (step) => {
                 }
 
                 button.btn-next {
-                    margin-top: 15px;
+                    margin-top: 82px;
                     animation: none;
-                    width: 160px;
-                    height: 50px;
-                    font-size: 26px;
-                    background-size: 100% 100%;
                 }
 
                 
-            }
-
-            &.step-3 {
-                div.tips {
-                    left: 50px;
-                    top: 275px;
-                }
-            }
-
-            &.step-4 {
-                div.tips {
-                    right: 30px;
-                    top: 180px;
-
-                    &.tips-close {
-                        animation: tips-shrink-out-right 0.4s ease-in forwards;
-                    }
-                }
             }
         }
     }
@@ -1015,46 +899,6 @@ watch(() => p.step, (step) => {
     }
     100% {
         opacity: 1;
-    }
-}
-
-@keyframes tips-pop-in {
-    0% {
-        opacity: 0;
-        transform: scale(0.15) translate(var(--offset-x, 350px), var(--offset-y, -50px));
-    }
-    50% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1) translate(0, 0);
-    }
-}
-
-@keyframes tips-shrink-out {
-    0% {
-        opacity: 1;
-        transform: scale(1) translate(0, 0);
-    }
-    100% {
-        opacity: 0;
-        transform: scale(0.15) translate(var(--offset-x, 350px), var(--offset-y, -50px));
-    }
-}
-
-@keyframes tips-shrink-out-right {
-    0% {
-        opacity: 1;
-        transform: scale(1);
-        top: calc(50% - 160px);
-        right: 20px;
-    }
-    100% {
-        opacity: 0;
-        transform: scale(0.3);
-        top: calc(50% - 22px);
-        right: 50px;
     }
 }
 
