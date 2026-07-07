@@ -85,7 +85,11 @@ const app = createApp({
 S.Track.init()
 
 // 初始化 Mzone Global（如果可用）
-if (S.Global.available) {
+function setupMzoneGlobal() {
+    if (!S.Global.available) {
+        return false
+    }
+
     console.log('[MzoneGlobal] 使用官方 SDK')
     S.Global.ide('morton', (config, userInfo) => {
         if (userInfo) {
@@ -96,9 +100,21 @@ if (S.Global.available) {
             S.Store.user.unitId = Number(userInfo.unitId) || S.Store.user.unitId
             S.Store.user.subjectId = Number(userInfo.subjectId) || S.Store.user.subjectId
         }
+
+        if (config?.icon !== undefined) {
+            S.Store.event = { cmd: 'mind-reading', content: config }
+        }
     })
-} else {
+    return true
+}
+
+if (!setupMzoneGlobal()) {
     console.log('[MzoneGlobal] SDK 不可用，使用自定义监听')
+    window.addEventListener('load', () => {
+        if (setupMzoneGlobal()) {
+            console.log('[MzoneGlobal] 延迟初始化成功')
+        }
+    })
 }
 
 // 监听事件

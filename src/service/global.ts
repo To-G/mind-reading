@@ -22,7 +22,7 @@ export class GlobalService {
     }
 
     private ensureInstance() {
-        if (this.initialized) return;
+        if (this.instance) return;
 
         const MzoneGlobal = window.MzoneGlobal;
         if (MzoneGlobal && MzoneGlobal.default) {
@@ -31,7 +31,6 @@ export class GlobalService {
             this.initialized = true;
             console.log('[MzoneGlobal] 初始化成功');
         } else {
-            console.warn('[MzoneGlobal] SDK 尚未挂载，稍后重试...');
             this.instance = null;
         }
     }

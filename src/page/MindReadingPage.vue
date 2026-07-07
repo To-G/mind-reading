@@ -191,14 +191,19 @@ const init = (c) => {
     })
 }
 
-// 开发环境下直接在浏览器打开时，自动 mock 一次 mind-reading 事件
-if (import.meta.env.DEV && type == PageType.EDITOR) {
-    init({
-        icon: '1,2,3,4,5,6,7,8,9,10',
-        mode: '1',
-        icon9: '0',
-        restartBtn: '1',
-    })
+// 非 iframe 独立打开时（GitHub Pages 预览等）自动进入
+const defaultPreviewConfig = {
+    icon: '1,2,3,4,5,6,7,8,9,10',
+    mode: '1',
+    icon9: '0',
+    restartBtn: '1',
+}
+
+const isStandalonePreview =
+    type === PageType.EDITOR && window.parent === window
+
+if (isStandalonePreview) {
+    init(defaultPreviewConfig)
 }
 
 const create = () => {
