@@ -10,6 +10,6 @@ export default defineConfig({
       '@': resolve(__dirname, 'src')
     }
   },
-  base: '/mind-reading/',
+  base: './',
   publicDir: 'src/asset/public'
 })

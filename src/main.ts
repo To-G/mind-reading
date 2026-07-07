@@ -84,6 +84,23 @@ const app = createApp({
 // 初始化埋点
 S.Track.init()
 
+// 初始化 Mzone Global（如果可用）
+if (S.Global.available) {
+    console.log('[MzoneGlobal] 使用官方 SDK')
+    S.Global.ide('morton', (config, userInfo) => {
+        if (userInfo) {
+            S.Store.user.id = Number(userInfo.userId) || S.Store.user.id
+            S.Store.user.token = userInfo.token || S.Store.user.token
+            S.Store.user.classId = Number(userInfo.classId) || S.Store.user.classId
+            S.Store.user.questionId = Number(userInfo.questionId) || S.Store.user.questionId
+            S.Store.user.unitId = Number(userInfo.unitId) || S.Store.user.unitId
+            S.Store.user.subjectId = Number(userInfo.subjectId) || S.Store.user.subjectId
+        }
+    })
+} else {
+    console.log('[MzoneGlobal] SDK 不可用，使用自定义监听')
+}
+
 // 监听事件
 console.log("初始化事件监听")
 

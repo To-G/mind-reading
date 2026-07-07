@@ -57,10 +57,12 @@ export const useIDE = (classKey: string, completed: (content?) => void) => {
         const trackKey = `learning-${type == PageType.SHARE ? 'report' : 'class'}-cpp2-h5-view`
         S.Track.trackWithUser(trackKey)
         S.Track.trackForExp(trackKey + '-' + classKey)
+        S.Global.trackWithUser(trackKey)
 
         if (type == PageType.SHARE) {
             S.Track.trackWithUser(trackKey + '-channel-' + channel)
             S.Track.trackForExp(trackKey + '-' + classKey + '-channel-' + channel)
+            S.Global.trackWithUser(trackKey + '-channel-' + channel)
         }
     }
 
@@ -68,10 +70,13 @@ export const useIDE = (classKey: string, completed: (content?) => void) => {
         const trackKey = `learning-${type == PageType.SHARE ? 'report' : 'class'}-cpp2-h5-complete-operation`
         S.Track.trackWithUser(trackKey)
         S.Track.trackForExp(trackKey + '-' + classKey)
+        S.Global.trackWithUser(trackKey)
+        S.Global.trackComplete()
 
         if (type == PageType.SHARE) {
             S.Track.trackWithUser(trackKey + '-channel-' + channel)
             S.Track.trackForExp(trackKey + '-' + classKey + '-channel-' + channel)
+            S.Global.trackWithUser(trackKey + '-channel-' + channel)
         }
     }
 
@@ -79,6 +84,7 @@ export const useIDE = (classKey: string, completed: (content?) => void) => {
         const trackKey = `learning-${type == PageType.SHARE ? 'report' : 'class'}-cpp2-h5-close`
         S.Track.trackWithUser(trackKey)
         S.Track.trackForExp(trackKey + '-' + classKey)
+        S.Global.trackWithUser(trackKey)
     }
 
     return { store: store, type, url, operationStart, operationEnd, operationClose }

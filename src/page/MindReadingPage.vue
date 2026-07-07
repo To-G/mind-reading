@@ -44,7 +44,8 @@ page.mind-reading-page(
                 em(@click='p.tips = true') 怎么算？
             button.btn-next(:style='{visibility: p.showContinue4 ? "visible" : "hidden"}' @click='next(5)') 继续
             div.tips(v-if='p.tips')
-                label 例如：20的十位数是2
+                label 例如：20的十位数是
+                    b 2
                     br
                     | 就要用 
                     b 2
@@ -97,6 +98,7 @@ import { AssetURL } from '../helper/asset';
 const final = String(useRoute().query.final) == '1'
 
 const itemsRef = ref(null)
+const panelRef = ref(null)
 const logs = ref<any[]>([])
 
 const voices = {
